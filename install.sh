@@ -951,8 +951,18 @@ setup_gaming() {
 	sudo chown -R "$USER":"$USER" /usr/lib/asf/
 
 	cd /usr/lib/asf
-	sudo git clone https://github.com/JustArchiNET/ASF-ui.git temp-ui
-	cd temp-ui
+	mkdir -p "www"
+
+	if [ -d "/usr/lib/asf/temp-ui/.git" ]; then
+        log "Repository already exists, pulling latest changes..."
+        cd temp-ui
+        sudo git pull || warn "Failed to pull latest changes, continuing with existing version"
+    else
+        log "Cloning repository..."
+        sudo git clone https://github.com/JustArchiNET/ASF-ui.git temp-ui || error "Failed to clone repository"
+        cd temp-ui
+    fi
+	
 	sudo npm install
 	sudo npm run build
 	cd ..
@@ -1672,7 +1682,6 @@ DNS_CONF
     sudo systemctl enable NetworkManager
     sudo systemctl enable iwd
     sudo systemctl enable bluetooth
-    #sudo systemctl enable blueman
     
     systemctl --user enable pipewire
     systemctl --user enable pipewire-pulse
