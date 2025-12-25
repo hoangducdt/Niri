@@ -1672,7 +1672,7 @@ DNS_CONF
     sudo systemctl enable NetworkManager
     sudo systemctl enable iwd
     sudo systemctl enable bluetooth
-    sudo systemctl enable blueman
+    #sudo systemctl enable blueman
     
     systemctl --user enable pipewire
     systemctl --user enable pipewire-pulse
