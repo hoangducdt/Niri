@@ -795,7 +795,6 @@ setup_base_packages() {
 		## 18.1 Terminal Emulator
 		"fish"                          # Friendly shell
 		"kitty"                         # GPU-accelerated terminal
-		"alacritty"                     # GPU-accelerated terminal
 		
 		## 18.2 Shell Utilities
 		"starship"                      # Cross-shell prompt
