@@ -1646,16 +1646,7 @@ QT_IM_MODULE=fcitx
 XMODIFIERS=@im=fcitx
 SDL_IM_MODULE=fcitx
 FCITX5_ENV
-    
-    # Auto-start Fcitx5
-    mkdir -p "$HOME/.config/autostart"
-    cat > "$HOME/.config/autostart/fcitx5.desktop" <<'FCITX5_DESKTOP'
-[Desktop Entry]
-Type=Application
-Name=Fcitx5
-Exec=fcitx5
-FCITX5_DESKTOP
-    
+
     # DNS configuration
     local resolved_conf="/etc/systemd/resolved.conf"
     if [ -f "$resolved_conf" ]; then
