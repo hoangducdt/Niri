@@ -1535,7 +1535,7 @@ setup_symlink(){
     log "Symlink filess..."
 
     local config_home="$HOME"
-    local configs_dir="$HOME/.local/share/Hyprland/Configs"
+    local configs_dir="$HOME/.local/share/Niri/Configs"
     
     if [ ! -d "$configs_dir" ]; then
         error "Configs directory not found at $configs_dir"
