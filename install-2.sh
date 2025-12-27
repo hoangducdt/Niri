@@ -2055,7 +2055,7 @@ EOF
 
 main() {
     show_banner
-    check_prerequisites
+    #check_prerequisites
     init_state
     handle_conflicts
     install_helper
