@@ -169,48 +169,65 @@ animations {
 }
 
 // ################ Window Rules ################
+// Rounded corners for all windows
 window-rule {
-    match app-id="kitty|org.quickshell|imv|swappy"
-    opacity 0.90
+    geometry-corner-radius 12
+    clip-to-geometry true
+    draw-border-with-background false
 }
 
+// Opacity rules - requires apps to have their own transparency disabled
 window-rule {
-    opacity 0.95
+    match app-id="kitty|org.quickshell|imv|swappy"
+    opacity 0.99
 }
 
 window-rule {
     match app-id="firefox"
-    opacity 0.90
+    opacity 0.85
+    draw-border-with-background false
 }
 
 window-rule {
     match app-id="microsoft-edge-stable|brave-browser"
-    opacity 0.90
+    opacity 0.85
+    draw-border-with-background false
 }
 
 window-rule {
     match app-id="code-oss|[Cc]ode|codium|code-url-handler|code-insiders-url-handler"
     opacity 0.80
+    draw-border-with-background false
 }
 
 window-rule {
     match app-id="thunar|org.kde.dolphin|org.kde.ark"
     opacity 0.80
+    draw-border-with-background false
 }
 
 window-rule {
     match app-id="org.pulseaudio.pavucontrol|blueman-manager|nm-applet|nm-connection-editor"
     opacity 0.80
+    draw-border-with-background false
 }
 
 window-rule {
     match app-id="[Ss]team|steamwebhelper|[Ss]potify"
-    opacity 0.70
+    opacity 0.75
+    draw-border-with-background false
 }
 
 window-rule {
     match app-id="vesktop|discord|WebCord|ArmCord"
     opacity 0.80
+    draw-border-with-background false
+}
+
+// Default opacity for other windows
+window-rule {
+    opacity 0.90
+    draw-border-with-background false
 }
 
 // Float windows
