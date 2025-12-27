@@ -139,7 +139,7 @@ animations {
 
     window-close {
         duration-ms 250
-        curve "ease-in-expo"
+        curve "ease-out-expo"
     }
 
     window-movement {
@@ -171,11 +171,10 @@ animations {
 // ################ Window Rules ################
 window-rule {
     match app-id="kitty|org.quickshell|imv|swappy"
-    opacity 1.0
+    opacity 0.90
 }
 
 window-rule {
-    match app-id="^(?!kitty|org.quickshell|imv|swappy).*$"
     opacity 0.95
 }
 
@@ -259,7 +258,6 @@ binds {
     // Window management
     Mod+Q { close-window; }
     Mod+F { fullscreen-window; }
-    Mod+P { toggle-window-pin; }
     
     // Focus
     Mod+Left  { focus-column-left; }
@@ -289,7 +287,6 @@ binds {
 
     // Column width presets
     Mod+R { reset-window-height; }
-    Mod+Shift+R { reset-column-width; }
     Mod+Comma { consume-or-expel-window-left; }
     Mod+Period { consume-or-expel-window-right; }
 
@@ -332,16 +329,16 @@ binds {
     Ctrl+Mod+Shift+Left  { move-column-to-workspace-up; }
 
     // Move workspace between monitors
-    Mod+Shift+Ctrl+Left  { move-workspace-to-monitor-left; }
-    Mod+Shift+Ctrl+Right { move-workspace-to-monitor-right; }
-    Mod+Shift+Ctrl+Up    { move-workspace-to-monitor-up; }
-    Mod+Shift+Ctrl+Down  { move-workspace-to-monitor-down; }
+    Mod+Shift+Alt+Left  { move-workspace-to-monitor-left; }
+    Mod+Shift+Alt+Right { move-workspace-to-monitor-right; }
+    Mod+Shift+Alt+Up    { move-workspace-to-monitor-up; }
+    Mod+Shift+Alt+Down  { move-workspace-to-monitor-down; }
 
     // Monitors
-    Mod+Shift+Left+Alt  { focus-monitor-left; }
-    Mod+Shift+Right+Alt { focus-monitor-right; }
-    Mod+Shift+Up+Alt    { focus-monitor-up; }
-    Mod+Shift+Down+Alt  { focus-monitor-down; }
+    Mod+Ctrl+Alt+H { focus-monitor-left; }
+    Mod+Ctrl+Alt+L { focus-monitor-right; }
+    Mod+Ctrl+Alt+K { focus-monitor-up; }
+    Mod+Ctrl+Alt+J { focus-monitor-down; }
 
     // Screenshots
     Print { screenshot; }
@@ -371,12 +368,12 @@ binds {
 
     // Utilities
     Mod+V { spawn "sh" "-c" "pkill fuzzel || cliphist list | fuzzel --dmenu | cliphist decode | wl-copy"; }
-    Mod+Period { spawn "sh" "-c" "pkill fuzzel || fuzzel-emoji"; }
+    Mod+Semicolon { spawn "sh" "-c" "pkill fuzzel || fuzzel-emoji"; }
     Mod+Shift+C { spawn "hyprpicker" "-a"; }
 
     // Lock and power
-    Mod+L { spawn "swaylock"; }
-    Mod+Shift+L { spawn "systemctl" "suspend-then-hibernate"; }
+    Mod+Escape { spawn "swaylock"; }
+    Mod+Shift+Escape { spawn "systemctl" "suspend-then-hibernate"; }
     Ctrl+Alt+Delete { spawn "wlogout"; }
 
     // Niri specific
@@ -387,14 +384,12 @@ binds {
     Mod+Alt+Space { switch-layout "next"; }
 
     // Tab through windows
-    Alt+Tab { focus-window-down-or-right; }
-    Alt+Shift+Tab { focus-window-up-or-left; }
+    Mod+Tab { focus-window-or-workspace-down; }
+    Mod+Shift+Tab { focus-window-or-workspace-up; }
 }
 
 // ################ Debug ################
 debug {
-    preview-render "off"
     wait-for-frame-completion-before-queueing
-    enable-color-transformations-capability
     render-drm-device "/dev/dri/renderD128"
 }
