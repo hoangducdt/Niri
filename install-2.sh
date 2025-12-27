@@ -791,6 +791,7 @@ setup_meta_packages() {
 		
 		## 15.3 DMS (DankMaterialShell) Dependencies
 		"quickshell-git"                # Flexible toolkit for making desktop shells with QtQuick
+		"dms-shell-bin"
 		
 		# ==========================================================================
 		# PHASE 16: GTK/QT THEMING & APPEARANCE
@@ -1852,24 +1853,7 @@ setup_dms() {
     fi
     
     log "Installing DankMaterialShell (DMS)..."
-    
-    # Clone DMS repository
-    local dms_dir="$HOME/.config/quickshell/dms"
-    
-    if [ -d "$dms_dir/.git" ]; then
-        log "DMS repository already exists, pulling latest..."
-        cd "$dms_dir" || error "Failed to cd to $dms_dir"
-        git pull || warn "Failed to pull updates"
-    else
-        log "Cloning DMS repository..."
-        git clone https://github.com/AvengeMedia/DankMaterialShell.git "$dms_dir" || error "Failed to clone DMS repository"
-        cd "$dms_dir" || error "Failed to cd to $dms_dir"
-    fi
-    
-    # Build and install DMS (requires Go 1.24+)
-    log "Compiling and installing DMS backend..."
-    sudo make install || error "Failed to build/install DMS"
-    
+	
     # Enable DMS systemd service
     log "Enabling DMS systemd service..."
     systemctl --user enable dms 2>/dev/null || warn "Failed to enable DMS service"
