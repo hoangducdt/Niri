@@ -86,7 +86,7 @@ EOF
 }
 
 clone_repo(){
-    local repo_dir="$HOME/.config/Niri"
+    local repo_dir="$HOME/.local/share/Niri"
     
     if [ -d "$repo_dir/.git" ]; then
         log "Repository already exists, pulling latest changes..."
