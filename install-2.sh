@@ -45,31 +45,6 @@ creative_info() {
 
 # ===== PRE-FLIGHT CHECKS =====
 
-check_prerequisites() {
-    log "Running pre-flight checks..."
-    
-    # Check if Arch-based system
-    if [[ ! -f /etc/arch-release ]]; then
-        error "This script is designed for Arch-based systems (CachyOS)"
-    fi
-    
-    # Check disk space (minimum 50GB recommended for full install)
-    local available_gb
-    available_gb=$(df -BG "$HOME" | awk 'NR==2 {print $4}' | sed 's/G//')
-    if [[ $available_gb -lt 50 ]]; then
-        warn "Low disk space: ${available_gb}GB available (recommended: 50GB+ for full install)"
-        read -rp "Continue anyway? (y/N): " response
-        [[ ! "$response" =~ ^[Yy]$ ]] && exit 1
-    fi
-    
-    # Check internet connection
-    if ! ping -c 1 -W 2 archlinux.org &>/dev/null; then
-        error "No internet connection detected. Required for package downloads."
-    fi
-    
-    log "✓ Pre-flight checks passed"
-}
-
 # Check sudo
 if ! sudo -v; then
     error "Không có quyền sudo. Thoát."
@@ -222,27 +197,14 @@ install_package() {
             return 0
         fi
         
-        # Auto-fix common errors
-        if grep -qi "keyring" "$LOG"; then
-            warn "Keyring issue detected, refreshing keys..."
-            sudo pacman -Sy --noconfirm archlinux-keyring cachyos-keyring 2>&1 | tee -a "$LOG"
-        elif grep -qi "conflicting files" "$LOG"; then
-            warn "File conflict detected, trying with --overwrite..."
-            if sudo pacman -S --noconfirm --overwrite '*' "$pkg" 2>&1 | tee -a "$LOG"; then
-                log "✓ Successfully installed with overwrite: $pkg"
-                return 0
-            fi
-        fi
-        
         retry=$((retry + 1))
         if [ $retry -lt $max_retries ]; then
-            local wait_time=$((2 ** retry))
-            warn "Retry installing $pkg ($retry/$max_retries) in ${wait_time}s..."
-            sleep "$wait_time"
+            warn "Retry installing $pkg ($retry/$max_retries)..."
+            sleep 2
         fi
     done
     
-    warn "Failed to install $pkg after $max_retries attempts"
+    warn "Failed to install $pkg"
     return 1
 }
 
@@ -273,39 +235,11 @@ install_aur_package() {
 install_packages() {
     local packages=("$@")
     local failed=()
-    local total=${#packages[@]}
-    local current=0
-    local start_time
-    start_time=$(date +%s)
-    
-    log "Installing $total packages..."
-    
-    # Increase parallel downloads
-    if ! grep -q "^ParallelDownloads" /etc/pacman.conf; then
-        echo "ParallelDownloads = 10" | sudo tee -a /etc/pacman.conf >/dev/null
-    fi
     
     for pkg in "${packages[@]}"; do
-        ((current++))
-        local elapsed=$(($(date +%s) - start_time))
-        local avg_time=$((elapsed > 0 && current > 0 ? elapsed / current : 0))
-        local remaining=$((total - current))
-        local eta=$((avg_time * remaining))
-        local progress=$((current * 100 / total))
-        
-        # Progress bar
-        local filled=$((progress / 2))
-        local bar
-        local empty
-        bar=$(printf "%${filled}s" | tr ' ' '█')
-        empty=$(printf "%$((50 - filled))s" | tr ' ' '░')
-        
         if pacman -Qi "$pkg" &>/dev/null; then
-            echo -ne "[${bar}${empty}] ${progress}% | ${current}/${total} | ETA: ${eta}s"
             continue
         fi
-        
-        echo -ne "[${bar}${empty}] ${progress}% | ${current}/${total} | Installing: $pkg"
         
         if pacman -Si "$pkg" &>/dev/null 2>&1; then
             if ! install_package "$pkg"; then
@@ -319,15 +253,9 @@ install_packages() {
         fi
     done
     
-    echo -e ""
-    
-    # Summary report
-    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    log "Installation summary: $((total - ${#failed[@]}))/$total packages succeeded"
     if [ ${#failed[@]} -gt 0 ]; then
-        warn "Failed packages (${#failed[@]}): ${failed[*]}"
+        warn "Failed packages: ${failed[*]}"
     fi
-    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
 # ===== BACKUP =====
@@ -1977,47 +1905,6 @@ verify_services() {
     log "✓ All critical services verified"
 }
 
-verify_installation() {
-    log "Verifying critical installations..."
-    
-    local critical_packages=(
-        "niri"
-        "nvidia-utils"
-        "docker"
-        "cuda"
-        "python-pytorch-cuda"
-    )
-    
-    local failed_verifications=()
-    
-    for pkg in "${critical_packages[@]}"; do
-        if ! pacman -Qi "$pkg" &>/dev/null; then
-            failed_verifications+=("$pkg")
-        fi
-    done
-    
-    if [ ${#failed_verifications[@]} -gt 0 ]; then
-        warn "Some critical packages not installed: ${failed_verifications[*]}"
-        warn "This may affect system functionality"
-        return 1
-    fi
-    
-    # Verify critical services
-    local critical_services=(
-        "docker"
-        "systemd-resolved"
-        "NetworkManager"
-    )
-    
-    for svc in "${critical_services[@]}"; do
-        if ! systemctl is-enabled "$svc" &>/dev/null; then
-            warn "Service $svc is not enabled"
-        fi
-    done
-    
-    log "✓ Installation verification complete"
-}
-
 # ===== GENERATE SUMMARY REPORT =====
 
 cleanup_cache() {
@@ -2055,7 +1942,6 @@ EOF
 
 main() {
     show_banner
-    #check_prerequisites
     init_state
     handle_conflicts
     install_helper
@@ -2079,7 +1965,6 @@ main() {
     setup_gtk_bookmarks
     setup_dms
     verify_services
-    verify_installation
     cleanup_cache
     generate_summary
     
