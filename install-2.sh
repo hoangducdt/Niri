@@ -1659,6 +1659,8 @@ setup_accountsservice(){
     
     log "Configuration account services..."
 
+local config_home="$HOME"
+
     if [ -L "$config_home/.face" ]; then
         local face_target
         face_target=$(readlink -f "$config_home/.face")
