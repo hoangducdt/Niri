@@ -1853,6 +1853,28 @@ setup_dms() {
     fi
     
     log "Installing DankMaterialShell (DMS)..."
+
+	sudo tee /usr/lib/systemd/user/dms.service > /dev/null <<DMS_CFG
+[Unit]
+Description=Dank Material Shell (DMS)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Environment="QT_QPA_PLATFORMTHEME=qt6ct"
+Environment="XDG_CURRENT_DESKTOP=niri"
+Type=dbus
+BusName=org.freedesktop.Notifications
+ExecStart=/usr/bin/dms run --session
+ExecReload=/usr/bin/pkill -USR1 -x dms
+Restart=always
+RestartSec=2
+TimeoutStopSec=10
+
+[Install]
+WantedBy=graphical-session.target
+DMS_CFG
 	
     # Enable DMS systemd service
     log "Enabling DMS systemd service..."
