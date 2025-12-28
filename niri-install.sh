@@ -14,9 +14,9 @@ LOG_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 readonly LOG="$HOME/setup_complete_${LOG_TIMESTAMP}.log"
 readonly ERROR_LOG="$HOME/setup_errors_${LOG_TIMESTAMP}.log"
-readonly STATE_DIR="$HOME/.cache/niri-dms-setup"
+readonly STATE_DIR="$HOME/.cache/wayland-setup"
 readonly STATE_FILE="$STATE_DIR/setup_state.json"
-readonly BACKUP_DIR="$HOME/Documents/niri-dms-configs-${BACKUP_TIMESTAMP}"
+readonly BACKUP_DIR="$HOME/Documents/wayland-configs-${BACKUP_TIMESTAMP}"
 
 log() {
 	echo -e "${GREEN}[$(date +'%H:%M:%S')]${NC} $1" | tee -a "$LOG"
@@ -67,7 +67,46 @@ SUDO_REFRESH_PID=$!
 trap 'kill $SUDO_REFRESH_PID 2>/dev/null' EXIT
 
 # Create directories
-mkdir -p "$STATE_DIR" "$BACKUP_DIR"
+setup_directories() {
+    if [ "$(is_completed 'directories')" = "yes" ]; then
+        log "✓ Directories already created"
+        return 0
+    fi
+    
+    log "Creating directories & downloading wallpapers..."
+    
+    mkdir -p "$STATE_DIR" "$BACKUP_DIR"
+    mkdir -p "$HOME"/{Desktop,Documents,Downloads,Music,Videos,OneDrive}
+    mkdir -p "$HOME/Pictures/Wallpapers"
+    mkdir -p "$HOME"/{AI-Projects,AI-Models,Creative-Projects,Blender-Projects}
+    mkdir -p "$HOME/.local/bin"
+
+    mkdir -p "$HOME/.config/btop"
+    mkdir -p "$HOME/.config/DankMaterialShell"
+    mkdir -p "$HOME/.config/fastfetch/logo"
+    mkdir -p "$HOME/.config/fish/functions"
+    mkdir -p "$HOME/.config/niri"
+    mkdir -p "$HOME/.config/hypr/scheme"
+    mkdir -p "$HOME/.config/hypr/scripts"
+    mkdir -p "$HOME/.config/kitty"
+    mkdir -p "$HOME/.config/MangoHud"
+    mkdir -p "$HOME/.config/micro"
+    #mkdir -p "$HOME/.config/spicetify/Themes/caelestia"
+    mkdir -p "$HOME/.config/Thunar"
+    mkdir -p "$HOME/.config/uwsm"
+    mkdir -p "$HOME/.config/vscode"
+    mkdir -p "$HOME/.config/VSCodium/User"
+    mkdir -p "$HOME/.config/xfce4"
+    mkdir -p "$HOME/.config/gtk-3.0"
+    mkdir -p "$HOME/.config/qt5ct"
+    mkdir -p "$HOME/.config/qt6ct"
+    
+    mkdir -p "/var/lib/AccountsService/users"
+    mkdir -p "/usr/lib/asf/www"
+    
+    mark_completed "directories"
+    log "✓ Directories created"
+}
 
 # ===== STATE MANAGEMENT =====
 
@@ -86,7 +125,7 @@ EOF
 }
 
 clone_repo(){
-    local repo_dir="$HOME/.local/share/Niri"
+    local repo_dir="$HOME/.local/share/Wayland"
     
     if [ -d "$repo_dir/.git" ]; then
         log "Repository already exists, pulling latest changes..."
@@ -94,7 +133,7 @@ clone_repo(){
         git pull || warn "Failed to pull latest changes, continuing with existing version"
     else
         log "Cloning repository..."
-        git clone https://github.com/hoangducdt/Niri.git "$repo_dir" || error "Failed to clone repository"
+        git clone https://github.com/hoangducdt/Wayland.git "$repo_dir" || error "Failed to clone repository"
         cd "$repo_dir" || error "Failed to cd to $repo_dir"
     fi
 }
@@ -285,7 +324,6 @@ backup_dir() {
 setup_gtk_bookmarks() {
     log "Setting up GTK bookmarks..."
     local bookmarks_file="$HOME/.config/gtk-3.0/bookmarks"
-    mkdir -p "$HOME/.config/gtk-3.0"
     local bookmarks=(
         "file://$HOME/Downloads"
         "file://$HOME/Documents"
@@ -485,7 +523,6 @@ setup_meta_packages() {
 		"qt6-wayland"                   # Qt6 Wayland support
 		"wl-clipboard"                  # Wayland clipboard utilities
 		"xdg-desktop-portal-gtk"        # XDG portal for file dialogs
-		"xdg-desktop-portal-gnome"      # GNOME XDG portal (for Niri)
 		
 		## 2.2 Graphics Libraries
 		"vulkan-icd-loader"             # Vulkan loader - BẮT BUỘC cho gaming/UE5
@@ -761,14 +798,10 @@ setup_meta_packages() {
 		"postman-bin"                   # API testing tool
 		
 		# ==========================================================================
-		# PHASE 15: NIRI WAYLAND COMPOSITOR & DMS
+		# PHASE 15: WAYLAND UTILITIES
 		# ==========================================================================
 		
-		## 15.1 Niri Core
-		"niri"                          # Scrollable-tiling Wayland compositor
-		"xwayland-satellite"            # Xwayland integration for Niri
-		
-		## 15.2 Niri Utilities
+		## 15.1 Utilities
         "ddcutil"                       # Query and change Linux monitor settings using DDC/CI and USB.
         "brightnessctl"                 # Lightweight brightness control tool.
 		"hyprpicker"                    # Color picker
@@ -784,14 +817,9 @@ setup_meta_packages() {
         "gpu-screen-recorder"			# Screen recorder for Linux
         "glib2"							# Low level core library
         "fuzzel"						# Application launcher for wlroots compositors
-        "mako"                          # Notification daemon for Wayland
-        "swaybg"                        # Background setter
-        "swayidle"                      # Idle manager
-        "swaylock"                      # Screen locker
 		
-		## 15.3 DMS (DankMaterialShell) Dependencies
+		## 15.2 Shell Dependencies
 		"quickshell-git"                # Flexible toolkit for making desktop shells with QtQuick
-		"dms-shell-bin"
 		
 		# ==========================================================================
 		# PHASE 16: GTK/QT THEMING & APPEARANCE
@@ -964,7 +992,6 @@ setup_gaming() {
 	sudo chown -R "$USER":"$USER" /usr/lib/asf/
 
 	cd /usr/lib/asf
-	mkdir -p "www"
 
 	if [ -d "/usr/lib/asf/temp-ui/.git" ]; then
         log "Repository already exists, pulling latest changes..."
@@ -1351,108 +1378,6 @@ EOF
     log "✓ System optimization completed"
 }
 
-setup_i2c_for_rgb() {
-    if [ "$(is_completed 'i2c_setup')" = "yes" ]; then
-        log "✓ i2c already configured"
-        return 0
-    fi
-    
-    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    log "Configuring i2c for RGB Control (OpenRGB)"
-    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    # 1. Load i2c modules immediately
-    log "Loading i2c kernel modules..."
-    sudo modprobe i2c-dev 2>&1 | tee -a "$LOG" || warn "Failed to load i2c-dev"
-    sudo modprobe i2c-piix4 2>&1 | tee -a "$LOG" || warn "Failed to load i2c-piix4"
-    
-    # 2. Configure modules to load at boot
-    log "Configuring i2c modules for autoload..."
-    
-    # Create i2c.conf if doesn't exist
-    if [ ! -f /etc/modules-load.d/i2c.conf ]; then
-        echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c.conf > /dev/null
-        echo "i2c-piix4" | sudo tee -a /etc/modules-load.d/i2c.conf > /dev/null
-        log "✓ Created /etc/modules-load.d/i2c.conf"
-    else
-        # File exists, append if not already present
-        if ! grep -q "i2c-dev" /etc/modules-load.d/i2c.conf; then
-            echo "i2c-dev" | sudo tee -a /etc/modules-load.d/i2c.conf > /dev/null
-        fi
-        if ! grep -q "i2c-piix4" /etc/modules-load.d/i2c.conf; then
-            echo "i2c-piix4" | sudo tee -a /etc/modules-load.d/i2c.conf > /dev/null
-        fi
-        log "✓ Updated /etc/modules-load.d/i2c.conf"
-    fi
-    
-    # 3. Create i2c group if doesn't exist and add user
-    log "Configuring i2c group permissions..."
-    
-    if ! getent group i2c > /dev/null 2>&1; then
-        sudo groupadd i2c
-        log "✓ Created i2c group"
-    fi
-    
-    # Add user to i2c group
-    sudo usermod -aG i2c "$USER" 2>&1 | tee -a "$LOG"
-    sudo sensors-detect --auto
-
-    log "✓ Added $USER to i2c group"
-    
-    # 4. Create udev rules for i2c devices
-    log "Creating udev rules for i2c devices..."
-    
-    sudo tee /etc/udev/rules.d/99-i2c.rules > /dev/null <<'EOF'
-# i2c device permissions for OpenRGB and other RGB control software
-KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"
-SUBSYSTEM=="i2c-dev", GROUP="i2c", MODE="0660"
-EOF
-    
-    log "✓ Created /etc/udev/rules.d/99-i2c.rules"
-    
-    # 5. Reload udev rules
-    sudo udevadm control --reload-rules
-    sudo udevadm trigger
-    log "✓ Reloaded udev rules"
-    
-    # 6. Verify i2c devices
-    
-    log "Verifying i2c devices..."
-    if find /dev -maxdepth 1 -type c -name 'i2c-*' | grep -q .; then
-        log "✓ i2c devices found:"
-        find /dev -maxdepth 1 -type c -name 'i2c-*' \
-            -printf "%M %u %g %s %TY-%Tm-%Td %TH:%TM %p\n" \
-            | sed 's/^/  /' | tee -a "$LOG"
-    else
-        warn "⚠ No i2c devices found (may appear after reboot)"
-    fi
-    
-    # 7. Check if modules are loaded
-    log "Checking loaded modules..."
-    if lsmod | grep -q i2c_dev; then
-        log "✓ i2c-dev module loaded"
-    else
-        warn "⚠ i2c-dev module not loaded"
-    fi
-    
-    if lsmod | grep -q i2c_piix4; then
-        log "✓ i2c-piix4 module loaded"
-    else
-        warn "⚠ i2c-piix4 module not loaded (normal for some systems)"
-    fi
-    
-    mark_completed "i2c_setup"
-    
-    echo ""
-    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    log "✓ i2c CONFIGURATION COMPLETE!"
-    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    log ""
-    log "OpenRGB can now access i2c devices for RGB control"
-    log "⚠️  REBOOT REQUIRED for group membership to take effect"
-    log ""
-}
-
 setup_dev() {
     if [ "$(is_completed 'dev')" = "yes" ]; then
         log "✓ Dev tools already installed"
@@ -1482,51 +1407,6 @@ setup_gdm() {
     log "✓ GDM installed and enabled"
 }
 
-setup_directories() {
-    if [ "$(is_completed 'directories')" = "yes" ]; then
-        log "✓ Directories already created"
-        return 0
-    fi
-    
-    log "Creating directories & downloading wallpapers..."
-    
-    mkdir -p "$HOME"/{Desktop,Documents,Downloads,Music,Videos,OneDrive}
-    mkdir -p "$HOME/Pictures/Wallpapers"
-    mkdir -p "$HOME"/{AI-Projects,AI-Models,Creative-Projects,Blender-Projects}
-    mkdir -p "$HOME/.local/bin"
-
-    mkdir -p "$HOME/.config/btop"
-    mkdir -p "$HOME/.config/caelestia"
-    mkdir -p "$HOME/.config/fastfetch/logo"
-    mkdir -p "$HOME/.config/fish/functions"
-    mkdir -p "$HOME/.config/hypr/hyprland"
-    mkdir -p "$HOME/.config/hypr/scheme"
-    mkdir -p "$HOME/.config/hypr/scripts"
-    mkdir -p "$HOME/.config/kitty"
-    mkdir -p "$HOME/.config/MangoHud"
-    mkdir -p "$HOME/.config/micro"
-    mkdir -p "$HOME/.config/spicetify/Themes/caelestia"
-    mkdir -p "$HOME/.config/Thunar"
-    mkdir -p "$HOME/.config/uwsm"
-    mkdir -p "$HOME/.config/vscode"
-    mkdir -p "$HOME/.config/VSCodium/User"
-    mkdir -p "$HOME/.config/xfce4"
-    mkdir -p "$HOME/.config/gtk-3.0"
-    mkdir -p "$HOME/.config/qt5ct"
-    mkdir -p "$HOME/.config/qt6ct"
-    
-    mkdir -p "/var/lib/AccountsService/users"
-    
-    # Wallpapers
-    if [ ! -d "$HOME/Pictures/Wallpapers/.git" ]; then
-        git clone --quiet --depth 1 https://github.com/mylinuxforwork/wallpaper.git \
-            "$HOME/Pictures/Wallpapers" 2>&1 | tee -a "$LOG" || warn "Wallpapers clone failed"
-    fi
-    
-    mark_completed "directories"
-    log "✓ Directories created"
-}
-
 setup_symlink(){
     if [ "$(is_completed "symlink")" = "yes" ]; then
         log "✓ Symlink files have been configured, skipping"
@@ -1535,8 +1415,7 @@ setup_symlink(){
     
     log "Symlink filess..."
 
-    local config_home="$HOME"
-    local configs_dir="$HOME/.local/share/Niri/Configs"
+    local configs_dir="$HOME/.local/share/Wayland/Configs"
     
     if [ ! -d "$configs_dir" ]; then
         error "Configs directory not found at $configs_dir"
@@ -1598,7 +1477,7 @@ setup_symlink(){
         log "Processing: $item_name"
         
         if [ -d "$item" ] && [ ! -L "$item" ]; then
-            local target_base="$config_home/$item_name"
+            local target_base="$HOME/$item_name"
             mkdir -p "$target_base"
             
             find "$item" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d '' subitem; do
@@ -1610,7 +1489,7 @@ setup_symlink(){
                 symlink_item "$subitem" "$target_path" "$relative_path"
             done
         else
-            local target_path="$config_home/$item_name"
+            local target_path="$HOME/$item_name"
             symlink_item "$item" "$target_path" "$item_name"
         fi
     done
@@ -1633,18 +1512,9 @@ setup_symlink(){
     fi
     
     log "Applying special configurations..."
-    
-    if pgrep -x "Hyprland" > /dev/null; then
-        log "Reloading Hyprland configuration..."
-        hyprctl reload 2>/dev/null || warn "Could not reload Hyprland"
-    fi
-    
-    if [ -d "$config_home/.config/hypr/scripts" ]; then
-        chmod +x "$config_home/.config/hypr/scripts"/*.sh 2>/dev/null || true
-    fi
-    
-    if [ -f "$config_home/.config/fastfetch/fastfetch.sh" ]; then
-        chmod +x "$config_home/.config/fastfetch/fastfetch.sh"
+
+    if [ -d "$HOME/.config" ]; then
+        find "$HOME/.config" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
     fi
 
     mark_completed "symlink"
@@ -1658,18 +1528,16 @@ setup_accountsservice(){
     fi
     
     log "Configuration account services..."
-
-local config_home="$HOME"
-
-    if [ -L "$config_home/.face" ]; then
+    
+    if [ -L "$HOME/.face" ]; then
         local face_target
-        face_target=$(readlink -f "$config_home/.face")
+        face_target=$(readlink -f "$HOME/.face")
         if [ -f "$face_target" ]; then
             chmod 644 "$face_target"
             log "✓ Set permissions for avatar target: $face_target"
         fi
-    elif [ -f "$config_home/.face" ]; then
-        chmod 644 "$config_home/.face"
+    elif [ -f "$HOME/.face" ]; then
+        chmod 644 "$HOME/.face"
     fi
 
     log "Configuring GDM avatar..."
@@ -1692,11 +1560,11 @@ local config_home="$HOME"
     fi
 
     local icon_path
-    if [ -L "$config_home/.face" ]; then
-        icon_path=$(readlink -f "$config_home/.face")
+    if [ -L "$HOME/.face" ]; then
+        icon_path=$(readlink -f "$HOME/.face")
         log "Using symlink target for GDM: $icon_path"
     else
-        icon_path="$config_home/.face"
+        icon_path="$HOME/.face"
     fi
 
     if [ -f "$accountsservice_file" ]; then
@@ -1763,14 +1631,14 @@ ACCOUNTSEOF
     log "✓ All account service configurations have been successfully completed."
 }
 
-
-setup_configs() {
-    if [ "$(is_completed "configs")" = "yes" ]; then
+setup_dns(){
+    if [ "$(is_completed "dns")" = "yes" ]; then
         log "✓ Configuration files already installed, skipping"
         return 0
     fi
-    
-    log "Configuring system settings..."
+
+    log "Configuring DNS..."
+
     local resolved_conf="/etc/systemd/resolved.conf"
     if [ -f "$resolved_conf" ]; then
         log "Updating DNS configuration..."
@@ -1807,6 +1675,16 @@ setup_configs() {
 
     sudo systemctl restart systemd-resolved.service 2>/dev/null || warn "Failed to restart systemd-resolved"
 
+    mark_completed "dns"
+    log "✓ DNS configurations have been successfully completed."
+}
+
+setup_static_ip() {
+    if [ "$(is_completed "staticip")" = "yes" ]; then
+        log "✓ Configuration static IP already installed, skipping"
+        return 0
+    fi
+
     log "Configuring static IP address..."
     
     local primary_interface
@@ -1841,53 +1719,26 @@ STATIC_IP
     else
         warn "Could not detect primary network interface for static IP configuration"
     fi
-
     
-
-    mark_completed "configs"
-    log "✓ All configurations installed successfully"
+    mark_completed "staticip"
+    log "✓ Static IP configurations installed successfully"
 }
 
-setup_dms() {
-    if [ "$(is_completed 'dms')" = "yes" ]; then
-        log "✓ DMS already installed"
+download_wallpapers() {
+    if [ "$(is_completed "wallpapers")" = "yes" ]; then
+        log "✓ Wallpapers downloaded, skipping"
         return 0
     fi
     
-    log "Installing DankMaterialShell (DMS)..."
+    log "Downloading wallpapers..."
 
-	sudo tee /usr/lib/systemd/user/dms.service > /dev/null <<DMS_CFG
-[Unit]
-Description=Dank Material Shell (DMS)
-PartOf=graphical-session.target
-After=graphical-session.target
-Requisite=graphical-session.target
+    if [ ! -d "$HOME/Pictures/Wallpapers/.git" ]; then
+        git clone --quiet --depth 1 https://github.com/mylinuxforwork/wallpaper.git \
+            "$HOME/Pictures/Wallpapers" 2>&1 | tee -a "$LOG" || warn "Wallpapers clone failed"
+    fi
 
-[Service]
-Environment="QT_QPA_PLATFORMTHEME=qt6ct"
-Environment="XDG_CURRENT_DESKTOP=niri"
-Type=dbus
-BusName=org.freedesktop.Notifications
-ExecStart=/usr/bin/dms run --session
-ExecReload=/usr/bin/pkill -USR1 -x dms
-Restart=always
-RestartSec=2
-TimeoutStopSec=10
-
-[Install]
-WantedBy=graphical-session.target
-DMS_CFG
-	
-    # Enable DMS systemd service
-    log "Enabling DMS systemd service..."
-    systemctl --user enable dms 2>/dev/null || warn "Failed to enable DMS service"
-    
-    # Bind DMS to Niri session
-    log "Binding DMS to Niri session..."
-    systemctl --user add-wants niri.service dms 2>/dev/null || warn "Failed to bind DMS to Niri"
-    
-    mark_completed "dms"
-    log "✓ DMS installed and configured"
+    mark_completed "wallpapers"
+    log "✓ Wallpapers download completed"
 }
 
 # ===== POST-INSTALL VERIFICATION =====
@@ -1928,9 +1779,9 @@ cleanup_cache() {
 generate_summary() {
     log "Generating installation summary..."
     
-    cat > "$HOME/niri-dms-install-summary.txt" << EOF
+    cat > "$HOME/install-summary.txt" << EOF
 ╔════════════════════════════════════════════════════════════╗
-║        NIRI + DMS INSTALLATION SUMMARY                     ║
+║                  INSTALLATION SUMMARY                      ║
 ╚════════════════════════════════════════════════════════════╝
 
 Installation Date: $(date '+%Y-%m-%d %H:%M:%S')
@@ -1943,34 +1794,111 @@ Backups: $BACKUP_DIR
 
 EOF
     
-    log "✓ Summary saved to: $HOME/niri-dms-install-summary.txt"
+    log "✓ Summary saved to: $HOME/install-summary.txt"
+}
+
+# ===== Niri =====
+
+setup_niri() {
+    if [ "$(is_completed 'niri')" = "yes" ]; then
+        log "✓ Niri already installed"
+        return 0
+    fi
+    
+    log "Installing Niri..."
+
+    local niri_pkgs=(
+        ## 15.1 Niri Core
+		"niri"                          # Scrollable-tiling Wayland compositor
+		"xwayland-satellite"            # Xwayland integration for Niri
+		"xdg-desktop-portal-gnome"      # GNOME XDG portal
+		"mako"                          # Notification daemon for Wayland
+        "swaybg"                        # Background setter
+        "swayidle"                      # Idle manager
+        "swaylock"                      # Screen locker
+    )
+
+    install_packages "${niri_pkgs[@]}"
+
+    mark_completed "niri"
+    log "✓ Niri installed and configured"
+}
+
+setup_dms() {
+    if [ "$(is_completed 'dms')" = "yes" ]; then
+        log "✓ DMS already installed"
+        return 0
+    fi
+    
+    log "Installing DankMaterialShell (DMS)..."
+
+    local dms_pkgs=(
+        "dms-shell-bin"                  # Desktop shell for wayland compositors built with Quickshell & GO
+    )
+
+    install_packages "${dms_pkgs[@]}"
+
+	sudo tee /usr/lib/systemd/user/dms.service > /dev/null <<DMS_CFG
+[Unit]
+Description=Dank Material Shell (DMS)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Environment="QT_QPA_PLATFORMTHEME=qt6ct"
+Environment="XDG_CURRENT_DESKTOP=niri"
+Type=dbus
+BusName=org.freedesktop.Notifications
+ExecStart=/usr/bin/dms run --session
+ExecReload=/usr/bin/pkill -USR1 -x dms
+Restart=always
+RestartSec=2
+TimeoutStopSec=10
+
+[Install]
+WantedBy=graphical-session.target
+DMS_CFG
+	
+    # Enable DMS systemd service
+    log "Enabling DMS systemd service..."
+    systemctl --user enable dms 2>/dev/null || warn "Failed to enable DMS service"
+    
+    # Bind DMS to Niri session
+    log "Binding DMS to Niri session..."
+    systemctl --user add-wants niri.service dms 2>/dev/null || warn "Failed to bind DMS to Niri"
+    
+    mark_completed "dms"
+    log "✓ DMS installed and configured"
 }
 
 # ===== MAIN =====
 
 main() {
     show_banner
+    setup_directories
     init_state
     handle_conflicts
     install_helper
     clone_repo
     setup_system_update
-    setup_nvidia_optimization
     setup_meta_packages
+    setup_symlink
+    setup_gdm
+    setup_accountsservice
+    setup_dns
+    setup_static_ip
+    setup_gtk_bookmarks
+    setup_dev
     setup_docker
     setup_gaming
     setup_multimedia
     setup_ai_ml
     setup_streaming
     setup_system_optimization
-    setup_dev
-    setup_i2c_for_rgb
-    setup_gdm
-    setup_directories
-    setup_symlink
-    setup_accountsservice
-    setup_configs
-    setup_gtk_bookmarks
+    setup_nvidia_optimization
+    download_wallpapers
+    setup_niri
     setup_dms
     verify_services
     cleanup_cache
